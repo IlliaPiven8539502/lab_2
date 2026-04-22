@@ -1,0 +1,367 @@
+{
+  "info": {
+    "name": "Messenger API — Лабораторна робота 2",
+    "description": "Колекція запитів для тестування Messenger API (Варіант 2 — відстеження статусів)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",   "value": "http://localhost:8080" },
+    { "key": "userAId",   "value": "" },
+    { "key": "userBId",   "value": "" },
+    { "key": "convId",    "value": "" },
+    { "key": "messageId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Користувачі",
+      "item": [
+        {
+          "name": "Створити користувача А (Аліса)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Є поле id', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.not.be.empty;",
+                  "  pm.collectionVariables.set('userAId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Аліса\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Створити користувача Б (Богдан)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Є поле id', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.not.be.empty;",
+                  "  pm.collectionVariables.set('userBId', json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Богдан\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Отримати список користувачів",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Відповідь є масивом', () => {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Розмови",
+      "item": [
+        {
+          "name": "Створити розмову (direct)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Є поле id', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.not.be.empty;",
+                  "  pm.collectionVariables.set('convId', json.id);",
+                  "});",
+                  "pm.test('Тип direct', () => {",
+                  "  pm.expect(pm.response.json().type).to.eql('direct');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/conversations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"direct\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Отримати список розмов",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Відповідь є масивом', () => {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/conversations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Повідомлення",
+      "item": [
+        {
+          "name": "Надіслати повідомлення",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Є messageId', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.not.be.empty;",
+                  "  pm.collectionVariables.set('messageId', json.id);",
+                  "});",
+                  "pm.test('Початковий статус sent', () => {",
+                  "  pm.expect(pm.response.json().status).to.eql('sent');",
+                  "});",
+                  "pm.test('Є timestamp createdAt', () => {",
+                  "  pm.expect(pm.response.json().createdAt).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": \"{{convId}}\",\n  \"senderId\": \"{{userAId}}\",\n  \"text\": \"Привіт, Богдане! Як справи?\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Отримати історію розмови",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Є повідомлення в історії', () => {",
+                  "  const msgs = pm.response.json();",
+                  "  pm.expect(msgs).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/conversations/{{convId}}/messages"
+          }
+        },
+        {
+          "name": "Оновити статус → delivered (Варіант 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                  "pm.test('updated = true', () => {",
+                  "  pm.expect(pm.response.json().updated).to.be.true;",
+                  "});",
+                  "pm.test('Новий статус delivered', () => {",
+                  "  pm.expect(pm.response.json().status).to.eql('delivered');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages/{{messageId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivered\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Оновити статус → read (Варіант 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Новий статус read', () => {",
+                  "  pm.expect(pm.response.json().status).to.eql('read');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages/{{messageId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"read\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Обробка помилок",
+      "item": [
+        {
+          "name": "Помилка — порожній текст повідомлення",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Є поле error', () => {",
+                  "  pm.expect(pm.response.json().error).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": \"{{convId}}\",\n  \"senderId\": \"{{userAId}}\",\n  \"text\": \"\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Помилка — неіснуючий відправник",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Є поле error', () => {",
+                  "  pm.expect(pm.response.json().error).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": \"{{convId}}\",\n  \"senderId\": \"не-існує-123\",\n  \"text\": \"Тест\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Помилка — неіснуюча розмова",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Є поле error', () => {",
+                  "  pm.expect(pm.response.json().error).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": \"не-існує-456\",\n  \"senderId\": \"{{userAId}}\",\n  \"text\": \"Тест\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Помилка — невідомий статус",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Є поле error', () => {",
+                  "  pm.expect(pm.response.json().error).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/messages/{{messageId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"невідомий\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
