@@ -1,259 +1,126 @@
-# Лабораторна робота №2 — Реалізація месенджера
+# Lab 2 — Messenger API
 
-**Курс:** Проєктування та документування програмного забезпечення  
+**Дисципліна:** Проєктування та документування ПЗ  
 **Варіант:** 2 — Відстеження статусів повідомлень  
-**Мова:** Java 21  
-**Попередня робота:** [Лабораторна робота №1](../lab1/README.md)
+**Мова:** Java · без зовнішніх залежностей  
 
 ---
 
-## Опис проєкту
+## Що реалізовано
 
-Мінімальний прототип системи обміну повідомленнями з підтримкою **відстеження статусів** (`sent` → `delivered` → `read`).
-
-Реалізує мінімальну еталонну архітектуру з Лабораторної роботи №1, розширену Варіантом 2:
+REST API месенджера з повним циклом повідомлення:
 
 ```
-Client → HTTP API → Message Service → Database (JSON файли)
+sent  →  delivered  →  read
 ```
 
-**Особливості:**
-- HTTP REST API на вбудованому `com.sun.net.httpserver` (без зовнішніх залежностей)
-- Зберігання даних у форматі JSON Lines — дані не губляться після перезапуску
-- Варіант 2: ендпоінт `PATCH /messages/{id}/status` для оновлення статусу повідомлення
-- 11 інтеграційних тестів, що перевіряють повний сценарій через реальний HTTP
+Стек: вбудований `com.sun.net.httpserver` + файловий storage у форматі JSON Lines.  
+Зовнішніх бібліотек немає — тільки стандартна Java.
 
 ---
 
-## Вимоги
-
-- **Java 17+** (JDK, не лише JRE)
-- Postman (для ручного тестування)
-
-Перевірити версію Java:
-```bash
-java -version
-javac -version
-```
-
----
-
-## Запуск
-
-### Запуск сервера
+## Швидкий старт
 
 ```bash
-# Linux / macOS
+# клонувати репозиторій
+git clone https://github.com/IlliaPiven8539502/lab_2.git
+cd lab_2/lab2
+
+# зробити скрипт виконуваним і запустити сервер
 chmod +x run.sh
 ./run.sh
-
-# Windows
-# Скомпілювати вручну:
-mkdir out
-javac -encoding UTF-8 -d out $(find src/main/java -name "*.java")
-java -cp out com.messenger.Main
 ```
 
-Сервер запуститься на `http://localhost:8080`.  
-Дані зберігаються у папці `./data/`.
+Сервер стартує на **http://localhost:8080**  
+Відкрий у браузері — побачиш інтерактивний тестовий інтерфейс.
 
-### Запуск інтеграційних тестів
+### Запуск тестів
 
 ```bash
 ./run.sh test
 ```
 
+```
+Результат: 16 пройшло / 0 провалено
+```
+
 ---
 
-## Структура проєкту
+## Структура
 
 ```
-messenger/
+lab2/
 ├── src/
 │   ├── main/java/com/messenger/
-│   │   ├── models/
-│   │   │   ├── User.java           # Модель користувача
-│   │   │   ├── Message.java        # Модель повідомлення (зі статусом)
-│   │   │   └── Conversation.java   # Модель розмови
-│   │   ├── storage/
-│   │   │   └── Database.java       # JSON Lines файловий storage
-│   │   ├── services/
-│   │   │   └── MessageService.java # Бізнес-логіка
-│   │   ├── api/
-│   │   │   └── Router.java         # HTTP маршрутизатор
-│   │   └── Main.java               # Точка входу
+│   │   ├── api/          Router.java         — HTTP маршрутизатор + UI
+│   │   ├── models/       User, Message, Conversation
+│   │   ├── services/     MessageService.java — бізнес-логіка
+│   │   ├── storage/      Database.java       — JSON Lines файли
+│   │   └── Main.java
 │   └── test/java/com/messenger/
-│       └── IntegrationTest.java    # 11 інтеграційних тестів
-├── data/                           # Файли з даними (створюються автоматично)
-│   ├── users.jsonl
-│   ├── conversations.jsonl
-│   └── messages.jsonl
-├── postman_collection.json         # Колекція Postman
-├── run.sh                          # Скрипт збірки та запуску
-└── README.md
+│       └── IntegrationTest.java              — 16 інтеграційних тестів
+├── postman_collection.json
+├── run.sh
+└── run.bat
 ```
 
 ---
 
 ## API
 
-### Користувачі
-
-#### Створити користувача
-```
-POST /users
-Content-Type: application/json
-
-{ "name": "Аліса" }
-```
-Відповідь `201`:
-```json
-{ "id": "uuid", "name": "Аліса" }
-```
-
-#### Отримати всіх користувачів
-```
-GET /users
-```
-
----
-
-### Розмови
-
-#### Створити розмову
-```
-POST /conversations
-Content-Type: application/json
-
-{ "type": "direct" }
-```
-Відповідь `201`:
-```json
-{ "id": "uuid", "type": "direct" }
-```
-
-#### Отримати всі розмови
-```
-GET /conversations
-```
-
----
-
-### Повідомлення
-
-#### Надіслати повідомлення
-```
-POST /messages
-Content-Type: application/json
-
-{
-  "conversationId": "uuid",
-  "senderId": "uuid",
-  "text": "Привіт!"
-}
-```
-Відповідь `201`:
-```json
-{
-  "id": "uuid",
-  "conversationId": "uuid",
-  "senderId": "uuid",
-  "text": "Привіт!",
-  "createdAt": "2025-01-01T12:00:00Z",
-  "status": "sent"
-}
-```
-
-#### Отримати історію розмови
-```
-GET /conversations/{id}/messages
-```
-
-#### Оновити статус повідомлення (Варіант 2)
-```
-PATCH /messages/{id}/status
-Content-Type: application/json
-
-{ "status": "delivered" }
-```
-Допустимі статуси: `sent`, `delivered`, `read`
-
-Відповідь `200`:
-```json
-{ "updated": true, "status": "delivered" }
-```
-
----
-
-### Обробка помилок
-
-| Ситуація | Код | Відповідь |
+| Метод | Маршрут | Опис |
 |---|---|---|
-| Порожній текст | 400 | `{"error": "..."}` |
-| Користувач не знайдений | 400 | `{"error": "..."}` |
-| Розмова не знайдена | 400 / 404 | `{"error": "..."}` |
-| Невідомий статус | 400 | `{"error": "..."}` |
+| `POST` | `/users` | Створити користувача |
+| `GET` | `/users` | Список користувачів |
+| `POST` | `/conversations` | Створити розмову |
+| `GET` | `/conversations` | Список розмов |
+| `POST` | `/messages` | Надіслати повідомлення |
+| `GET` | `/conversations/{id}/messages` | Історія розмови |
+| `PATCH` | `/messages/{id}/status` | Оновити статус ← Варіант 2 |
+
+### Приклад сценарію через curl
+
+```bash
+# 1. Створити користувача
+curl -s -X POST http://localhost:8080/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Аліса"}'
+
+# 2. Створити розмову
+curl -s -X POST http://localhost:8080/conversations \
+  -H "Content-Type: application/json" \
+  -d '{"type":"direct"}'
+
+# 3. Надіслати повідомлення
+curl -s -X POST http://localhost:8080/messages \
+  -H "Content-Type: application/json" \
+  -d '{"conversationId":"<convId>","senderId":"<userId>","text":"Привіт!"}'
+
+# 4. Оновити статус
+curl -s -X POST http://localhost:8080/messages/<msgId>/status \
+  -H "Content-Type: application/json" \
+  -H "X-HTTP-Method-Override: PATCH" \
+  -d '{"status":"delivered"}'
+```
 
 ---
 
 ## Тестування в Postman
 
-1. Відкрити Postman
-2. Імпортувати файл `postman_collection.json` (File → Import)
-3. Запустити запити по порядку (папки 1 → 2 → 3 → 4)
-4. Змінні `userAId`, `userBId`, `convId`, `messageId` заповнюються автоматично
+1. **Import** → обрати `postman_collection.json`
+2. Запускати запити по порядку — змінні (`userAId`, `convId`, `messageId`) зберігаються автоматично
+3. Папки: `1. Користувачі` → `2. Розмови` → `3. Повідомлення` → `4. Помилки`
 
 ---
 
-## Інтеграційні тести
+## Збереження даних
 
-Тест запускає реальний HTTP-сервер і перевіряє повний сценарій:
-
-| # | Тест |
-|---|---|
-| 1 | Створення користувача А — отримано id |
-| 2 | Створення користувача Б — отримано id |
-| 3 | Список містить обох користувачів |
-| 4 | Створення розмови — отримано id |
-| 5 | Надсилання повідомлення — статус `sent` |
-| 6 | Повідомлення є в історії розмови |
-| 7 | Оновлення статусу → `delivered` |
-| 8 | Оновлення статусу → `read` |
-| 9 | Помилка при порожньому тексті |
-| 10 | Помилка при неіснуючому відправнику |
-| 11 | Помилка при неіснуючій розмові |
-
----
-
-## Реалізований варіант
-
-**Варіант 2 — Відстеження статусів повідомлень**
-
-Діаграма станів повідомлення:
+Дані зберігаються у `./data/` у форматі JSON Lines — кожен рядок є окремим записом:
 
 ```
-[*] → sent → delivered → read → [*]
-              ↑
-         (помилка доставки → повторна спроба)
+data/users.jsonl
+data/conversations.jsonl
+data/messages.jsonl
 ```
 
-Ключове архітектурне рішення (ADR-001): статуси оновлюються через явні клієнтські підтвердження (`PATCH /messages/{id}/status`), а не серверну інференцію.
-
----
-
-## Питання для захисту
-
-1. **Як система гарантує збереження повідомлень?**  
-   Кожне повідомлення одразу записується у файл `messages.jsonl` через `Files.writeString` з режимом `APPEND`. Дані зберігаються незалежно від стану сервера.
-
-2. **Що відбувається якщо одержувач офлайн?**  
-   Повідомлення зберігається зі статусом `sent`. При наступному підключенні клієнт отримує його і надсилає ACK `delivered`.
-
-3. **Як повідомлення унікально ідентифікуються?**  
-   Кожне повідомлення отримує `UUID` згенерований через `UUID.randomUUID()` та `timestamp` у форматі ISO-8601.
-
-4. **Які помилки можуть виникнути при надсиланні?**  
-   Порожній текст, неіснуючий відправник, неіснуюча розмова — всі повертають HTTP 400 з описом помилки.
-
-5. **Як система змінилася б для 1 мільйона користувачів?**  
-   Файловий storage замінити на PostgreSQL; додати connection pool; Message Service розмістити за load balancer; статуси доставляти через WebSocket або черги (Kafka/RabbitMQ).
+Файли зберігаються між перезапусками сервера. Для скидання — видалити вміст папки `data/`.
